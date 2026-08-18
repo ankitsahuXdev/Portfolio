@@ -11,4 +11,4 @@
  * do, wahan se mila hua URL yahan daal dena, jaise:
  *   const API_BASE_URL = "https://ankit-portfolio-backend.onrender.com";
  */
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = "https://portfolio-ncjr.onrender.com";
