@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Portfolio Messages</title>
+<style>
+  :root{ --bg:#0a0a0d; --surface:#16161b; --border:#2a2a33; --text:#f2f2f4; --muted:#9a9aa4; --red:#e0202b; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:Arial,sans-serif; padding:32px 20px; }
+  .wrap{ max-width:900px; margin:0 auto; }
+  h1{ font-size:22px; margin-bottom:4px; }
+  p.sub{ color:var(--muted); margin-top:0; margin-bottom:24px; font-size:14px; }
+  .key-row{ display:flex; gap:10px; margin-bottom:24px; flex-wrap:wrap; }
+  input{ flex:1; min-width:220px; padding:12px 14px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); }
+  button{ padding:12px 20px; border-radius:8px; border:none; background:var(--red); color:#fff; font-weight:600; cursor:pointer; }
+  button:hover{ opacity:.9; }
+  #status{ font-size:13px; color:var(--muted); margin-bottom:16px; min-height:18px; }
+  .msg-card{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 18px; margin-bottom:14px; }
+  .msg-top{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+  .msg-top b{ font-size:15px; }
+  .msg-top span{ color:var(--muted); font-size:12.5px; }
+  .msg-body{ white-space:pre-wrap; font-size:14px; line-height:1.5; color:#ddd; }
+  .empty{ color:var(--muted); text-align:center; padding:40px 0; }
+  a{ color:#ff8a8a; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📬 Portfolio Messages</h1>
+  <p class="sub">Enter your ADMIN_KEY (from backend/.env) to view messages saved from your contact form.</p>
+
+  <div class="key-row">
+    <input id="keyInput" type="password" placeholder="Admin key">
+    <button id="loadBtn">View Messages</button>
+  </div>
+  <div id="status"></div>
+  <div id="results"></div>
+</div>
+
+<script>
+  const keyInput = document.getElementById("keyInput");
+  const status = document.getElementById("status");
+  const results = document.getElementById("results");
+  const loadBtn = document.getElementById("loadBtn");
+
+  // Remember the key locally in this browser only, so you don't retype it every time.
+  const saved = localStorage.getItem("admin_key");
+  if (saved) keyInput.value = saved;
+
+  async function load(){
+    const key = keyInput.value.trim();
+    if (!key){ status.textContent = "Enter your admin key first."; return; }
+    localStorage.setItem("admin_key", key);
+
+    status.textContent = "Loading...";
+    results.innerHTML = "";
+
+    try{
+      const res = await fetch("/api/messages", { headers: { "x-admin-key": key } });
+      const data = await res.json();
+
+      if (!res.ok || !data.success){
+        status.textContent = "❌ " + (data.error || "Could not load messages.");
+        return;
+      }
+
+      status.textContent = `${data.count} message(s) found.`;
+
+      if (!data.messages.length){
+        results.innerHTML = '<p class="empty">No messages yet — once someone submits your contact form, they will show up here.</p>';
+        return;
+      }
+
+      results.innerHTML = data.messages.map(m => `
+        <div class="msg-card">
+          <div class="msg-top">
+            <b>${escapeHtml(m.name)} &lt;${escapeHtml(m.email)}&gt;</b>
+            <span>${new Date(m.created_at).toLocaleString()}</span>
+          </div>
+          <div class="msg-body">${escapeHtml(m.message)}</div>
+        </div>
+      `).join("");
+    } catch(err){
+      status.textContent = "❌ Could not reach the backend. Is it running?";
+    }
+  }
+
+  function escapeHtml(str){
+    return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+  }
+
+  loadBtn.addEventListener("click", load);
+  keyInput.addEventListener("keydown", e => { if (e.key === "Enter") load(); });
+
+  if (saved) load();
+</script>
+</body>
+</html>
