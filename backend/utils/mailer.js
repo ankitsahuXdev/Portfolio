@@ -57,6 +57,23 @@ async function sendContactNotification({ name, email, message }) {
   return { sent: true };
 }
 
+async function sendOtpEmail({ email, otp }) {
+  if (!isConfigured()) throw new Error("EMAIL_USER/EMAIL_PASS not set — cannot send OTP.");
+  await getTransporter().sendMail({
+    from: `"Ankit Sahu Portfolio" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: `Your verification code: ${otp}`,
+    text: `Your verification code is ${otp}. It is valid for 10 minutes.\n\nIf you did not request this, please ignore this email.`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:480px">
+        <h2 style="color:#e0202b;margin-bottom:4px;">Verify your email</h2>
+        <p>Use this code to verify your email on Ankit Sahu's portfolio:</p>
+        <p style="font-size:32px;letter-spacing:8px;font-weight:700;background:#f5f5f5;padding:14px;border-radius:8px;text-align:center;">${otp}</p>
+        <p style="color:#555;">Valid for 10 minutes. If this wasn't you, just ignore this email.</p>
+      </div>`,
+  });
+}
+
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -64,4 +81,4 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;");
 }
 
-module.exports = { sendContactNotification, isConfigured };
+module.exports = { sendContactNotification, sendOtpEmail, isConfigured };
